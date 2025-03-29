@@ -10,7 +10,7 @@ if "messages" not in st.session_state:
 
 # Application header
 st.title("ECHO")
-st.subheader("💬 Chain of Thought Chatbot")
+st.subheader("💬 Chain of Thought new Chatbot")
 st.caption("Chat multiple AI models")
 
 # Check if API is configured
