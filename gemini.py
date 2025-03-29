@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get API key from environment
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBq0Ejk9DOBdFIi7PkquqGCagR2HOGXeD4")  # Replace with your actual API key if not using .env
+API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDQit9nAA22Lnnd66S1kfzfgq7QkYSi5Y0")  # Replace with your actual API key if not using .env
 
 # Configure the API
 try:
@@ -33,11 +33,11 @@ def get_response(prompt, chat_history=None):
     
     try:
         model = genai.GenerativeModel('gemini-1.5-pro')
-        
+
         if chat_history:
             # Create a chat session using previous history
             chat = model.start_chat(history=chat_history)
-            response = chat.send_message(prompt)
+            response = model.generate_content(prompt)
         else:
             # Simple content generation
             response = model.generate_content(prompt)
@@ -45,3 +45,11 @@ def get_response(prompt, chat_history=None):
         return True, response.text
     except Exception as e:
         return False, f"Error: {str(e)}"
+    
+
+
+    # API_KEY = secrets.token_hex(32)
+    # def authenticate(api_key):
+    #     return api_key == API_KEY
+    
+    # user_api_key = ""

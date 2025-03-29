@@ -222,19 +222,34 @@ if prompt := st.chat_input("Ask something..."):
                 for msg in st.session_state.messages[:-1]  # Exclude the current message
             ]
             
-            # Breakdown bot processing
-            success, breakdown_response = gemini.get_response(
-                f"Break down this question for analysis: {prompt}",
-                chat_history if chat_history else None
-            )
             
-            # Solver bot processing
-            success, final_response = gemini.get_response(
-                f"Based on this breakdown: '{breakdown_response}', provide a comprehensive answer to the original question: '{prompt}'",
-                chat_history if chat_history else None
-            )
+            # # Breakdown bot processing
+            success, breakdownlst = gemini.get_response(
+                 f"Break down this question into multiple subproblems and split each with a comma : {prompt}",
+                 chat_history if chat_history else None
+             )
+            breakdownlst = breakdownlst.split(',')
+            conversation = []
             
-            # Display the final response
+            # for i in range(len(breakdownlst)):
+            #     success, answer = gemini.get_response(f" solve this subproblem: {breakdownlst[i]}", conversation)
+            #     success, check = gemini.get_response(f" doublecheck if this is proper solution to previous subproblem: {answer}", conversation)
+            #     conversation += [(answer , check)]
+
+            
+            # # Solver bot processing
+            # success, final_response = gemini.get_response(
+            #     f"Based on this breakdown: '{breakdown_response}', provide a comprehensive answer to the original question: '{prompt}'",
+            #     chat_history if chat_history else None
+            # )
+            
+            # # Display the final response
+            final_response = breakdownlst
+
+            print(breakdownlst)
+            print('/n', type(breakdownlst))
+            print("history:", chat_history)
+            final_response = '\n'.join(breakdownlst)
             st.write(final_response)
     
     # Add final assistant response to chat history
