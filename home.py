@@ -2,6 +2,7 @@ import os
 import streamlit as st
 import google.generativeai as genai
 import collaberator
+
 # Page configuration must be the first Streamlit command
 st.set_page_config(
     page_title="ECHO",
@@ -9,8 +10,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-
 
 # Custom CSS for minimal professional dark theme with fixed spacing and chat improvements
 st.markdown("""
@@ -175,7 +174,7 @@ with st.sidebar:
         
     st.markdown("#### Select Bots:")
     
-    available_bots = ["ChatGPT", "Gemini"]
+    available_bots = ["Gemini"]
 
     # Dropdown for breakdown bot
     st.session_state.breakdown_bot = st.selectbox(
@@ -214,18 +213,23 @@ with st.sidebar:
 st.markdown(f"<h2 style='text-align: center; justify-content: center; margin-bottom: 6px;'>ECHO</h2>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; color: #90cdf4; margin-bottom: 20px;'>Chain of Thought Problem Solver</p>", unsafe_allow_html=True)
 
-#Test the API configuration
-# genai.configure(api_key="AIzaSyDQit9nAA22Lnnd66S1kfzfgq7QkYSi5Y0")
+# Uncomment and configure when ready
+# genai.configure(api_key="YOUR_API_KEY_HERE")
 
+# Create a container for the chat messages
+chat_container = st.container()
 
 # Display chat messages
-with st.container():
+with chat_container:
     for message in st.session_state.messages:
-        with st.chat_message(message["role"], avatar=None):
-            if message["role"] == "assistant" and "<div class=" in message["content"]:
-                st.markdown(message["content"], unsafe_allow_html=True)
+        role = message["role"]
+        content = message["content"]
+        
+        with st.chat_message(role, avatar=None):
+            if role == "assistant" and isinstance(content, str) and ("<div" in content or "<p" in content):
+                st.markdown(content, unsafe_allow_html=True)
             else:
-                st.markdown(message["content"])
+                st.markdown(content)
 
 # Add a small spacer
 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
@@ -237,21 +241,29 @@ if prompt := st.chat_input("Ask something..."):
     
     # Display user message
     with st.chat_message("user"):
-        st.write(prompt)
+        st.markdown(prompt)
     
     # Process with the agents
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         message_placeholder.markdown("Processing your request...")
         
-        # Run the agent interaction with live updates to the placeholder
-        conversation_html, solution = collaberator.iterate_agents(prompt, message_placeholder)
-        
-        # Display final conversation
-        message_placeholder.markdown(conversation_html, unsafe_allow_html=False)
-    
-    # Add final assistant response to chat history
-    st.session_state.messages.append({
-        "role": "assistant", 
-        "content": conversation_html
-    })
+        # Run the agent interaction and get HTML content
+        try:
+            conversation_html, solution = collaberator.iterate_agents(prompt, message_placeholder)
+            
+            # Update the placeholder with the final HTML content
+            message_placeholder.markdown(conversation_html, unsafe_allow_html=True)
+            
+            # Store the HTML content in the chat history
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": conversation_html
+            })
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+            message_placeholder.markdown(error_message)
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": error_message
+            })

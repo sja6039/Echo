@@ -85,7 +85,7 @@ def iterate_agents(initial_prompt, message_placeholder):
                 message_placeholder.markdown("\n".join(conversation_html), unsafe_allow_html=True)
                 break
 
-        if iteration_count >= 5:  # safety measure
+        if iteration_count >= 7:  # safety measure
             final_prompt = f"You've reached the maximum number of iterations. Based on all the steps so far, please synthesize a final solution to the original problem. Include 'isSolution': true in your response."
             success_a, agent_a_response = get_questioner(final_prompt, chat_history_a)
             if success_a:
