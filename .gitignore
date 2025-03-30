@@ -18,3 +18,4 @@ yarn-error.log*
 # Ignore system files
 .DS_Store
 Thumbs.db
+venv/ # Add venv to .gitignore to prevent future pushes
