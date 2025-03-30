@@ -1,13 +1,16 @@
+import os
 import streamlit as st
-import gemini
-
-# Page configuration
+import google.generativeai as genai
+import collaberator
+# Page configuration must be the first Streamlit command
 st.set_page_config(
     page_title="ECHO",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+
 
 # Custom CSS for minimal professional dark theme with fixed spacing and chat improvements
 st.markdown("""
@@ -24,7 +27,7 @@ st.markdown("""
         border-radius: 12px;
         padding: 16px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        margin-bottom: 0px; /* Reduced to 0px from 16px */
+        margin-bottom: 0px;
     }
     .sidebar .block-container {
         background-color: #1e1e1e;
@@ -53,7 +56,7 @@ st.markdown("""
         background-color: #1e1e1e;
         border-radius: 8px;
         padding: 4px;
-        margin-top: 0px; /* Added to remove top spacing */
+        margin-top: 0px;
         position: relative !important;
         top: auto !important;
         bottom: auto !important;
@@ -127,6 +130,33 @@ st.markdown("""
         min-width: 42px !important;
         margin-right: 8px !important;
     }
+
+    /* Agent conversation styling */
+    .agent-a {
+        background-color: rgba(100, 149, 237, 0.15);
+        border-left: 3px solid cornflowerblue;
+        padding: 10px 15px;
+        margin: 8px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    .agent-b {
+        background-color: rgba(144, 238, 144, 0.15);
+        border-left: 3px solid lightgreen;
+        padding: 10px 15px;
+        margin: 8px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    .agent-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .solution {
+        background-color: rgba(255, 215, 0, 0.15);
+        border-left: 3px solid gold;
+        padding: 10px 15px;
+        margin: 12px 0;
+        border-radius: 0 8px 8px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -134,21 +164,19 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "breakdown_bot" not in st.session_state:
-    st.session_state.breakdown_bot = "ChatGPT"
+    st.session_state.breakdown_bot = "Gemini"
 if "solver_bot" not in st.session_state:
-    st.session_state.solver_bot = "Claude"
+    st.session_state.solver_bot = "Gemini"
 
-# Available bots
-available_bots = ["ChatGPT", "Claude", "Gemini"]
-
-# Sidebar for bot selection and about info
+# Sidebar for configuration
 with st.sidebar:
     st.markdown("## ECHO")
     st.markdown("### Chain of Thought")
-    
-    # Replace checkboxes with two dropdown selectors
+        
     st.markdown("#### Select Bots:")
     
+    available_bots = ["ChatGPT", "Gemini"]
+
     # Dropdown for breakdown bot
     st.session_state.breakdown_bot = st.selectbox(
         "Select bot to break down the question:",
@@ -164,14 +192,15 @@ with st.sidebar:
     )
     
     st.divider()
-    
-    # About section (minimized)
-    with st.expander("About", expanded=False):
+
+    # About section
+    with st.expander("About", expanded=True):
         st.markdown("""
-        **ECHO** creates a chain of thought by passing conversations through two steps:
+        **ECHO** creates a chain of thought by passing conversations through three steps:
         
-        1. The breakdown bot analyzes your question
-        2. The solver bot provides the final solution
+        1. The breakdown bot analyzes your question creating several subequestions to then send to the solver bot.
+        2. The solver bot provides then solves each subproblem given from the breakdown bot, then returns the solution to the breakdown bot.
+        3. The original breakdown bot then verifies the solution and gives the solution back to the user.
         
         You can use the same bot for both roles or combine different bots' strengths.
         """)
@@ -181,29 +210,27 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# Main content area with minimal professional dark theme
-chain_description = f"{st.session_state.breakdown_bot} → {st.session_state.solver_bot}"
-st.markdown(f"<h2 style='text-align: center; margin-bottom: 6px;'>ECHO</h2>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; color: #90cdf4; margin-bottom: 20px;'>{chain_description}</p>", unsafe_allow_html=True)
+# Main content area
+st.markdown(f"<h2 style='text-align: center; justify-content: center; margin-bottom: 6px;'>ECHO</h2>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: #90cdf4; margin-bottom: 20px;'>Chain of Thought Problem Solver</p>", unsafe_allow_html=True)
 
-# API configuration check
-if not gemini.is_configured():
-    error = gemini.get_configuration_error()
-    st.error(f"API is not configured properly. Error: {error}")
-    st.info("Please set your API key in the configuration settings.")
-    st.stop()
+#Test the API configuration
+# genai.configure(api_key="AIzaSyDQit9nAA22Lnnd66S1kfzfgq7QkYSi5Y0")
 
-# Create a container for chat messages
+
+# Display chat messages
 with st.container():
-    # Display chat messages with minimal styling
     for message in st.session_state.messages:
         with st.chat_message(message["role"], avatar=None):
-            st.write(message["content"])
+            if message["role"] == "assistant" and "<div class=" in message["content"]:
+                st.markdown(message["content"], unsafe_allow_html=True)
+            else:
+                st.markdown(message["content"])
 
 # Add a small spacer
 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
-# Chat input below the conversation
+# Chat input
 if prompt := st.chat_input("Ask something..."):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -212,51 +239,19 @@ if prompt := st.chat_input("Ask something..."):
     with st.chat_message("user"):
         st.write(prompt)
     
-    # Process with the selected bots
+    # Process with the agents
     with st.chat_message("assistant"):
-        with st.spinner(f"Processing with {st.session_state.breakdown_bot} → {st.session_state.solver_bot}..."):
-            # Convert session state messages to format expected by API
-            chat_history = [
-                {"role": "user" if msg["role"] == "user" else "model", 
-                 "parts": [msg["content"]]}
-                for msg in st.session_state.messages[:-1]  # Exclude the current message
-            ]
-            
-            
-            # # Breakdown bot processing
-            success, breakdownlst = gemini.get_response(
-                 f"Break down this question into multiple subproblems and split each with a comma : {prompt}",
-                 chat_history if chat_history else None
-             )
-            breakdownlst = breakdownlst.split(',')
-            conversation = []
-            
-            # for i in range(len(breakdownlst)):
-            #     success, answer = gemini.get_response(f" solve this subproblem: {breakdownlst[i]}", conversation)
-            #     success, check = gemini.get_response(f" doublecheck if this is proper solution to previous subproblem: {answer}", conversation)
-            #     conversation += [(answer , check)]
-
-            
-            # # Solver bot processing
-            # success, final_response = gemini.get_response(
-            #     f"Based on this breakdown: '{breakdown_response}', provide a comprehensive answer to the original question: '{prompt}'",
-            #     chat_history if chat_history else None
-            # )
-            
-            # # Display the final response
-            final_response = breakdownlst
-
-            print(breakdownlst)
-            print('/n', type(breakdownlst))
-            print("history:", chat_history)
-            final_response = '\n'.join(breakdownlst)
-            st.write(final_response)
+        message_placeholder = st.empty()
+        message_placeholder.markdown("Processing your request...")
+        
+        # Run the agent interaction with live updates to the placeholder
+        conversation_html, solution = collaberator.iterate_agents(prompt, message_placeholder)
+        
+        # Display final conversation
+        message_placeholder.markdown(conversation_html, unsafe_allow_html=False)
     
     # Add final assistant response to chat history
     st.session_state.messages.append({
         "role": "assistant", 
-        "content": final_response
+        "content": conversation_html
     })
-    
-    # Force a rerun to update the UI with the new messages and reset the input field
-    st.rerun()
