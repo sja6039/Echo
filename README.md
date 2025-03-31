@@ -10,7 +10,7 @@ This project implements an iterative conversation between two AI agents to solve
 
 The system visualizes the conversation in real-time using Streamlit, with color-coded messages and a clear display of the final solution.
 
-![Preview of PDF](/images/ECHOAI.jpg)
+![Preview of ECHOAI](https://raw.githubusercontent.com/sja6039/Echo/main/images/ECHOAI.jpg)
 
 ## Features
 
@@ -20,4 +20,8 @@ The system visualizes the conversation in real-time using Streamlit, with color-
 - Color-coded UI for easy distinction between agents
 - Maximum iteration limit to prevent infinite loops
 - Clean, styled interface with Streamlit
+
+## Link to app
+
+https://aiecho.streamlit.app
 
