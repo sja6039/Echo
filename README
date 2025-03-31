@@ -10,6 +10,8 @@ This project implements an iterative conversation between two AI agents to solve
 
 The system visualizes the conversation in real-time using Streamlit, with color-coded messages and a clear display of the final solution.
 
+![Preview of PDF](/Users/samadams/Desktop/EchoStreamlit/Echo/images/ECHOAI.png)
+
 ## Features
 
 - Interactive problem-solving through staged agent conversation
